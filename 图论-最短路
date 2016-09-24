@@ -1,0 +1,181 @@
+
+/*
+a one-way path 
+
+
+*/
+
+
+/*
+对于某个点到其他点的最短路(sssp)
+      
+      计算寻找
+                *//*对于只含非负权边的图:
+
+                          dijkastra  
+                              mlogn   vector存储
+
+                              思想:贪心的来求解,关键是按照递增的顺序来贪心保证正确性.
+                              实现:采用vector来实现图的存储,尤其适合稀疏图.下面的实现通过优先队列将其优化到 mlogn
+                                    
+                                    struct edge
+                                    {
+                                       起点 终点  权值
+                                    };
+
+                                    struct dijkstra
+                                    {
+                                    	记录基本的节点数和边数,并声明好边和节点的附加空间.
+
+                                    	void init(初始化有多少节点)
+                                    	{ ...}
+
+                                    	void addedge(添加边的信息)
+                                    	{ ...}
+
+                                    	void dijkstra(起点s)
+                                    	{
+                                           初始化开始的信息.			(标记那些最短路d[]都是非常远,和没有到最终状态的done[]数组为0 )  声明附加空间
+
+                                           开始按照递增的顺序进行修改了
+                                    							        {
+                                    							        	从起点开始进行
+                                    							        	之后引入待处理队列.
+                                    							        	当这个队列非空时候
+                                    							        	     处理这里面的第一个(当然是距离 d值最小的),处理完就扔掉. 同时这个处理操作包括一系列的附加信息,标识信息done.  记录之后的节点u来方便使用.
+                                    							        	     开始对正在处理的这个节点(G[u])进行所有中转节点的考虑了
+                                    							        	     REP(i,0,G[u].size() )
+                                    							        	     {
+
+
+                                    							        	     }
+
+                                    							        }
+                                    	...
+                                    	}
+
+                                    }
+                                        //examples-----------------------
+                                                     /*  hdu  2544 纯粹模板  dijkastra  
+
+                                                                      #include<iostream>
+                                                                      #include<vector>
+                                                                      #include<cstdio>
+                                                                      #include<queue>
+                                                                      #include<algorithm>
+                                                                      #include<cstring>
+                                                                      using namespace std;
+                                                                    
+                                                                    //--------------start-----------------
+                                                                    //******将图的n个节点编号为0 1 2 ... n-1,所以注意和题目的编号(可能要减去1.)进行一致的对应.
+                                                                    
+                                                                      const int maxn=1000+5;                            //******最多的节点数目.
+                                                                      const int INF =0x3f3f3f3f;
+                                                                     
+                                                                      struct Edge
+                                                                      {
+                                                                          int from,to,dist;
+                                                                         Edge(int u,int  v,int d):from(u),to(v),dist(d){}
+                                                                      };
+                                                                      
+                                                                      struct HeapNode        //堆节点(其实就是为了书写方便直观)
+                                                                      {
+                                                                          int d,u;                        // 这个节点到起点的当前最短路(d) 和 这个节点的编号.
+                                                                          bool operator < (const HeapNode& rhs) const  //重载运算符从而直接用优先队列就可以了.
+                                                                          { return d>rhs.d;  }
+                                                                      };
+                                                                     
+                                                                      struct Dijkstra
+                                                                      {
+                                                                          int n,m;
+                                                                          vector <Edge> edges;                          //所有的边  vector <Edge> edges; 
+                                                                          vector <int> G[maxn];    //从节点i出发的所有边的编号.G[i][0 1 2...个数(size)-1]
+                                                                          bool done[maxn];                              //当done[i]为true,标志着这个节点的最短路已经得出. 
+                                                                          int p[maxn];                               //
+                                                                          int d[maxn];
+
+                                                                          void init(int n)
+                                                                          {
+                                                                              this->n=n;
+                                                                              for(int i=0;i<n;i++)  G[i].clear();
+                                                                              edges.clear();
+                                                                          }
+
+                                                                          void AddEdge(int u,int v,int value)
+                                                                          {
+                                                                              edges.push_back(Edge ( u,v,value ) );
+                                                                              m=edges.size();               //对边进行编号,总边数为m,则编号成了0 1 2...m-1 放进了vector
+                                                                              G[u].push_back(m-1);
+                                                                                   //cout<<u<<" "<<v<<" "<<value<<endl;
+                                                                          }
+
+                                                                          void dijkstra(int s)
+                                                                          {
+                                                                              for(int i=0;i<n;i++)  d[i]=INF;
+                                                                              memset(done,0,sizeof done);
+
+                                                                              d[s]=0;
+                                                                              priority_queue<HeapNode> Q ;
+                                                                              Q.push( (HeapNode){0,s} );//推入s到s距离为0的这条边.
+
+                                                                              while(!Q.empty())//以 从某个节点出发的最短边递增顺序 开始进行优化.
+                                                                              {
+                                                                                  HeapNode x=Q.top(); Q.pop();
+                                                                                  int u=x.u;   if(done[u]) continue; done[u]=true;
+                                                                                  for(int i=0;i<G[u].size();i++)//对所有以u为起点的边(u 到 e.to)进行松弛操作.
+                                                                                  {
+                                                                                    Edge &e =edges[G[u][i]];   //某个以u为起点的边.
+                                                                                    if(d[e.to]>d[u]+e.dist)    //
+                                                                                    {
+                                                                                      d[e.to]=d[u]+e.dist;
+                                                                                     p[e.to]=G[u][i];//用来记录节点 e.to到起点的最短路中连接e.to节点的那条边.(也就是用来记录最短路径的辅助数组)
+                                                                                      Q.push(  (HeapNode){d[e.to],e.to}   ) ;
+                                                                                    } 
+                                                                                  }
+                                                                              }
+                                                                        }
+
+                                                                      };
+                                                                //--------------end----------------
+                                                                      int main()
+                                                                      {
+
+                                                                        freopen("in.txt","r",stdin);
+                                                                        int n,m;
+                                                                        while(cin>>n>>m&&n)                         //******读入节点数n,边数m
+                                                                        {
+                                                                          Dijkstra solve;    
+                                                                          solve.init(n);                            //******初始化为了n节点的图,清空各个节点的vector.
+                                                                          while(m--)
+                                                                          {
+                                                                                 int u,v,dist;
+                                                                                 cin>>u>>v>>dist;                        
+                                                                            solve.AddEdge(u-1,v-1,dist);
+                                                                            solve.AddEdge(v-1,u-1,dist);          //******添加了u指向v的有向边及权值和v指向u的..
+                                                                          }
+                                                                          solve.dijkstra(0);                     //******以0为起点调用djkstra算法,得到从0开始的最短路solve.d[i]数组
+                                                                          cout<<solve.d[n-1];//<<" ";             
+                                                                          cout<<endl;
+                                                                        }
+                                                                        return 0;
+                                                                      }
+                                                                      /*
+                                                                      */
+
+                /*对于含负权边的图:
+                        如果存在从起点s可达的负权回路,这样的图是不存在最短路(可以记成负无穷)的.也就是说最短路一定不含环(正负零均不能存在.)*/
+
+/*    
+      美妙的性质: 
+                 (最优子结构:总路径为最短路径,则其每个子路径都必然也是最短路径) 
+
+
+
+
+
+*/
+
+
+
+
+//hdu 
